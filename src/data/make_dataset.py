@@ -3,7 +3,6 @@ from dotenv import load_dotenv, find_dotenv
 import get_kenya
 import get_haiti
 
-
 # find .env automagically by walking up directories until it's found
 dotenv_path = find_dotenv()
 
@@ -34,6 +33,8 @@ data_haiti = get_haiti.read_metadata(haiti_metadata_url)
 ## Combining all the data
 data_all = data_ken_1.append(data_ken_2).append(data_ken_3).append(data_haiti)
 data_complete = data_all.dropna()
+
+data_complete.to_csv('../../data/processed/complete_data.csv')
 
 ### TODO Check completeness of data exported from access to csv for Kenya facilities 2 and 3
 ### IDEA Only load visit data ?
