@@ -34,7 +34,7 @@ data_haiti = get_haiti.read_metadata(haiti_metadata_url)
 data_all = data_ken_1.append(data_ken_2).append(data_ken_3).append(data_haiti)
 data_complete = data_all.dropna()
 
-data_complete.to_csv('../../data/processed/complete_data.csv')
+data_complete.to_csv('../../data/processed/complete_data.csv' , index = False)
 
 ### TODO Check completeness of data exported from access to csv for Kenya facilities 2 and 3
 ### IDEA Only load visit data ?
