@@ -39,3 +39,4 @@ data_complete.to_csv('../../data/processed/complete_data.csv' , index = False)
 ### TODO Check completeness of data exported from access to csv for Kenya facilities 2 and 3
 ### IDEA Only load visit data ?
 ### TODO for Haiti, get dict of form types
+### TODO format dates so they are all outputed in the same way
