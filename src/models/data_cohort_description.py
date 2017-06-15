@@ -46,12 +46,7 @@ for grace_period in [30, 60, 90,  180]:
 
 vl = data.facility.value_counts()
 
-font = {'weight': 'normal',
-        'size': 8}
-
-matplotlib.rc('font', **font)
 plt.figure(figsize=(12, 6))
-plt.title('LTFU Rates of patients started before 2012-01-01')
 plt.subplot(2, 2, 1)
 for fac in vl.index:
     try:
@@ -107,5 +102,15 @@ a = data1.groupby(['facility', 'visit_month']).delta_entry.median()
 for fac in vl.index[0:250]:
     try:
         a[fac].plot()
+    except (KeyError, ValueError):
+        continue
+
+
+plt.figure(figsize=(30 , 30))
+for i in range(120):
+    plt.subplot(12, 10, (i + 1))
+    try:
+        dat = a[vl.index[i]]
+        dat.plot()
     except (KeyError, ValueError):
         continue
