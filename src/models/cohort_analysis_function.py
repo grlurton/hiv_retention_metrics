@@ -1,5 +1,5 @@
 import pandas as pd
-
+import numpy as np
 
 def get_first_visit_date(data_patient):
     data_patient['first_visit_date'] = min(data_patient.visit_date)
@@ -25,7 +25,7 @@ def status_patient(data_patient, reference_date, analysis_date, grace_period):
                               'analysis_date': analysis_date}])
 
 
-def ltfu_rate(patients_status_df):
+def get_ltfu_rate(patients_status_df):
     ltfu_perc = np.mean(patients_status_df.status == 'LTFU')
     return ltfu_perc
 
