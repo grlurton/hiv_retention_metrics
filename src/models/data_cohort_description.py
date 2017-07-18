@@ -3,7 +3,7 @@ import src.models.cohort_analysis_function as caf
 import matplotlib
 import matplotlib.pyplot as plt
 %matplotlib inline
-
+import numpy as np
 
 data = pd.read_csv('data/processed/complete_data.csv')
 data = data[data.date_entered >= data.visit_date]
@@ -18,10 +18,11 @@ def perc_entered(data, date):
     return np.mean(data_to_enter.date_entered < date)
 
 
-data.groupby('facility').apply(perc_entered, date='2012-01')
+# data.groupby('facility').apply(perc_entered, date='2012-01')
 
 ltfu_rates = []
 years = ['2012-01-01', '2013-01-01', '2014-01-01', '2015-01-01', '2016-01-01']
+# TODO Parrallelize this
 for grace_period in [30, 60, 90,  180]:
     print(str(grace_period) + ' Days for definition')
     for year in years:
@@ -35,16 +36,18 @@ for grace_period in [30, 60, 90,  180]:
         perc_ltfu = status_dat.reset_index()
         perc_ltfu = perc_ltfu.groupby(['country', 'facility',
                                        'analysis_date', 'grace_period'])
-        perc_ltfu = perc_ltfu.apply(caf.get_ltfu_rate)
+        perc_ltfu = perc_ltfu.apply(caf.ltfu_rate)
         if len(ltfu_rates) > 0:
             ltfu_rates = ltfu_rates.append(perc_ltfu)
         if len(ltfu_rates) == 0:
             ltfu_rates = status_dat.reset_index()
             ltfu_rates = ltfu_rates.groupby(['country', 'facility',
                                             'analysis_date', 'grace_period'])
-            ltfu_rates = ltfu_rates.apply(caf.get_ltfu_rate)
+            ltfu_rates = ltfu_rates.apply(caf.ltfu_rate)
 
 vl = data.facility.value_counts()
+
+# TODO move the outputting functions in a separate script, and just call here with conditional triggering
 
 plt.figure(figsize=(12, 6))
 plt.subplot(2, 2, 1)
@@ -114,3 +117,5 @@ for i in range(120):
         dat.plot()
     except (KeyError, ValueError):
         continue
+
+# Check : point of care arrive starting 2013-01

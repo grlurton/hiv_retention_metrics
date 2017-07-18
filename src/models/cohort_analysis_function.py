@@ -1,5 +1,5 @@
 import pandas as pd
-
+import numpy as np
 
 def get_first_visit_date(data_patient):
     data_patient['first_visit_date'] = min(data_patient.visit_date)
@@ -48,7 +48,7 @@ def horizon_outcome(data_patient, reference_date, analysis_date,
 # QUESTION What is the validation of a LTFU patient ? Never comes back ? Comes
 # back in less than a year ?
 # QUESTION What are the form_types
-# QUESTION Where are the other outcomes
+# QUESTION Where are the other outcomes => Discontinuation form_types => which is discDate ?
 # TODO refactor the functions :
 # 1. Function to extract relevant data frame
 # 2. Function to compute the needed quantity
@@ -57,3 +57,6 @@ def horizon_outcome(data_patient, reference_date, analysis_date,
 # TODO A given patient is on average wrongly considered LTFU XX% of the time if
 # analysis conducted
 # TODO Replication Chi ?
+
+
+# Active patient summary by site. Isanté Team. Voir si on peut intégrer le résultat pour eux.
