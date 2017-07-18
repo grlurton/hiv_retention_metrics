@@ -2,6 +2,7 @@ import pandas as pd
 import src.models.cohort_analysis_function as caf
 import matplotlib
 import matplotlib.pyplot as plt
+import numpy as np
 %matplotlib inline
 import numpy as np
 
@@ -11,7 +12,6 @@ data = data.groupby('patient_id').apply(caf.get_first_visit_date)
 
 
 dat_2012 = data[data.first_visit_date < '2012-01-01']
-
 
 def perc_entered(data, date):
     data_to_enter = data[data.visit_date < date]
@@ -51,7 +51,7 @@ vl = data.facility.value_counts()
 
 plt.figure(figsize=(12, 6))
 plt.subplot(2, 2, 1)
-for fac in vl.index:
+for fac in list(vl.index):
     try:
         plt.plot(
             pd.to_datetime(list(ltfu_rates[:, fac, :, 30].index.levels[1])),
@@ -101,12 +101,7 @@ data1 = data[(data['delta_entry'] >= 0) & (data['delta_entry'] <630)]
 
 plt.hist(data1.delta_entry, bins=52);
 
-a = data1.groupby(['facility', 'visit_month']).delta_entry.median()
-for fac in vl.index[0:250]:
-    try:
-        a[fac].plot()
-    except (KeyError, ValueError):
-        continue
+
 
 
 plt.figure(figsize=(30 , 30))
@@ -115,7 +110,7 @@ for i in range(120):
     try:
         dat = a[vl.index[i]]
         dat.plot()
-    except (KeyError, ValueError):
+    except (KeyError, ValueError , IndexError):
         continue
 
 # Check : point of care arrive starting 2013-01
