@@ -161,14 +161,36 @@ def get_true_status(data_pat):
     out.time = pd.to_numeric(out.time)
     return out
 
+%%time
+out = data2[2000000:2100000].groupby(level = 0).apply(get_true_status)
 
-out
-out = data2[0:100000].groupby(level = 0).apply(get_true_status)
-
-u = out.groupby(level = 0).time.apply(sum)
+u = out.groupby(level = 1).time.apply(np.mean)
 print(u)
 
+
+# Until he finally exits care, a patient spends on average :
+
+out.head()
+
+
+def perc_time_status(data , total_time):
+    return data.time.iloc[0] / total_time
+
+def patient_distribution_status(data_patient):
+    total_time = sum(data_patient.time.fillna(0))
+    if len(data_patient) > 1 :
+        time_distribution = data_patient.groupby(level = 1).apply(perc_time_status , total_time)
+        return time_distribution
+
+out.head()
+t = out.groupby(level = 0).apply(patient_distribution_status)
+t.head()
+t.groupby(level = 1).fillna(0).apply(np.mean)
+
+t.reset_index()
 u[0] / sum(u)
+
+out
 
 
 # For each patient :
@@ -179,7 +201,6 @@ u[0] / sum(u)
 ##              ii. if not on time => status 3
 ##         b. if not on time => status 4
 ## 3. Final outcome not important for now
-
 
 
 ## 2. Table :
