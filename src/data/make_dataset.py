@@ -3,6 +3,14 @@ import os
 import src.data.get_kenya as get_kenya
 import src.data.get_haiti as get_haiti
 
+from dotenv import load_dotenv, find_dotenv
+
+# find .env automagically by walking up directories until it's found
+dotenv_path = find_dotenv()
+
+# load up the entries as environment variables
+load_dotenv(dotenv_path)
+
 kenya = False
 haiti = True
 
@@ -23,8 +31,11 @@ if kenya :
     data_ken_2 = get_kenya.format_tables(visits_2, patients_2, 'ken_fac_2')
     data_ken_3 = get_kenya.format_tables(visits_3, patients_3, 'ken_fac_3')
 
-haiti_metadata_url = os.environ.get("haiti_metadata_url")
-haiti_metadata_url = 'data/raw/encBplus.txt'
+haiti_metadata_url = os.environ.get("haiti_data")
+
+haiti_metadata_url
+
+haiti_metadata_url = haiti_metadata_url  + '/encBplus.txt'
 # Loading Haiti
 data_haiti = get_haiti.read_metadata(haiti_metadata_url)
 
