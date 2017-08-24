@@ -133,18 +133,19 @@ def get_true_status(data_pat):
     date = []
     status_list = []
     data_pat = data_pat.reset_index().set_index(['patient_id' , 'date_entered']).sort_index()
+    final_visit = max(data_pat.visit_date)
     for data_entry_date in data_pat.index.levels[1] :
+        visit_date = data_pat.loc[(slice(None) , data_entry_date) , 'visit_date'].iloc[0]
         if len(date) > 0 :
             delta = pd.to_datetime(data_entry_date) - pd.to_datetime(date_next)
             if delta.days <= 90:
                 new_status = 'In Care'
             if delta.days > 90 :
-                delta_visit = pd.to_datetime(data_pat.loc[(slice(None) , data_entry_date) , 'visit_date'].iloc[0]) -     pd.to_datetime(date_next)
+                delta_visit = pd.to_datetime(visit_date) - pd.to_datetime(date_next)
                 if delta_visit.days <= 90:
                     new_status = 'Data Entry LTFU'
                 if delta_visit.days > 90 :
-                    new_status = 'True LTFU'
-            date_next = data_pat.loc[(slice(None) , data_entry_date)  , 'next_visit_date'].iloc[0]
+                    new_status = 'Temporary LTFU'
             if new_status != status :
                 status_list.append(new_status)
                 date.append(data_entry_date)
@@ -161,18 +162,20 @@ def get_true_status(data_pat):
     out.time = pd.to_numeric(out.time)
     return out
 
+max(data2.visit_date)
+data2.loc[(slice(None) , '2013-03-14') , 'visit_date'].iloc[0]
+data2.head()
+
 %%time
-out = data2[2000000:2100000].groupby(level = 0).apply(get_true_status)
+out = data2[2000000:2010000].groupby(level = 0).apply(get_true_status)
+
+out.head(50)
 
 u = out.groupby(level = 1).time.apply(np.mean)
 print(u)
 
 
 # Until he finally exits care, a patient spends on average :
-
-out.head()
-
-
 def perc_time_status(data , total_time):
     return data.time.iloc[0] / total_time
 
@@ -182,16 +185,10 @@ def patient_distribution_status(data_patient):
         time_distribution = data_patient.groupby(level = 1).apply(perc_time_status , total_time)
         return time_distribution
 
-out.head()
 t = out.groupby(level = 0).apply(patient_distribution_status)
-t.head()
-t.groupby(level = 1).fillna(0).apply(np.mean)
+t.columns = ['perc']
 
-t.reset_index()
-u[0] / sum(u)
-
-out
-
+t.groupby(level = 1).mean()
 
 # For each patient :
 ## 1. Start visit 1 => status 1

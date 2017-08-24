@@ -49,6 +49,7 @@ data_complete = data_all.dropna()
 data_complete.to_csv('data/processed/complete_data.csv', index=False)
 
 # TODO Check completeness of data exported from access to csv for Kenya 2 and 3
+# TODO Check for computing environment at start. May be have it in initial script.
 # IDEA Only load visit data ?
 # TODO for Haiti, get dict of form types
 # TODO format dates so they are all outputed in the same way
