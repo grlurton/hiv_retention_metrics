@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 %matplotlib inline
 import numpy as np
+from datetime import timedelta
 
 data = pd.read_csv('data/processed/complete_data.csv')
 data = data[data.date_entered >= data.visit_date]
@@ -127,8 +128,11 @@ ids = data1.patient_id.unique()[12345]
 pat1 = data1[(data1.patient_id == ids)]
 pat1 = pat1.set_index(['patient_id' , 'date_entered']).sort_index()
 
+pat1
+
 data2 = data1.set_index(['patient_id' , 'date_entered']).sort_index()
 
+## Change to make : for patient who are Data Entry LTFU have the change of status happen right after the data is entered. Ie : 2 dates have to be added / 2 periods
 def get_true_status(data_pat):
     date = []
     status_list = []
@@ -136,6 +140,7 @@ def get_true_status(data_pat):
     final_visit = max(data_pat.visit_date)
     for data_entry_date in data_pat.index.levels[1] :
         visit_date = data_pat.loc[(slice(None) , data_entry_date) , 'visit_date'].iloc[0]
+        ltfu_date = pd.to_datetime(visit_date) + timedelta(days=90)
         if len(date) > 0 :
             delta = pd.to_datetime(data_entry_date) - pd.to_datetime(date_next)
             if delta.days <= 90:
@@ -166,6 +171,9 @@ max(data2.visit_date)
 data2.loc[(slice(None) , '2013-03-14') , 'visit_date'].iloc[0]
 data2.head()
 
+
+pd.to_datetime(data2.visit_date.iloc[0]) + timedelta(days=90)
+
 %%time
 out = data2[2000000:2010000].groupby(level = 0).apply(get_true_status)
 
@@ -190,6 +198,7 @@ t.columns = ['perc']
 
 t.groupby(level = 1).mean()
 
+
 # For each patient :
 ## 1. Start visit 1 => status 1
 ## 2. Look next visit :
@@ -203,6 +212,19 @@ t.groupby(level = 1).mean()
 ## 2. Table :
     # col1 : date status change
     # col2 : new status
+
+# Prob of patient coming back on a given date knowing he didn't come earlier
+data1 = data[data.patient_id == 1110010001]
+data.head()
+
+def prob_comeback(data, date, appointment_date):
+    '''Function that returns a table of the probability a patient will come to visit on a given day, knowing he didn't come earlier'''
+    data[]
+
+
+
+
+
 
 
 
