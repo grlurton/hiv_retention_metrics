@@ -128,9 +128,9 @@ ids = data1.patient_id.unique()[12345]
 pat1 = data1[(data1.patient_id == ids)]
 pat1 = pat1.set_index(['patient_id' , 'date_entered']).sort_index()
 
-pat1
+data1.head()
 
-data2 = data1.set_index(['patient_id' , 'date_entered']).sort_index()
+data2 = data1.set_index(['patient_id' , 'date_entered'])
 
 ## Change to make : for patient who are Data Entry LTFU have the change of status happen right after the data is entered. Ie : 2 dates have to be added / 2 periods
 def get_true_status(data_pat):
@@ -214,19 +214,28 @@ t.groupby(level = 1).mean()
     # col2 : new status
 
 # Prob of patient coming back on a given date knowing he didn't come earlier
-data1 = data[data.patient_id == 1110010001]
+data1 = data[data.facility == 'ken_fac_1']
 data.head()
 
-def prob_comeback(data, date, appointment_date):
-    '''Function that returns a table of the probability a patient will come to visit on a given day, knowing he didn't come earlier'''
-    data[]
+data1.head()
 
+def shift_date_next(data):
+    data.sort_values(by = 'visit_date')
+    data['awaiting_date'] = data.next_visit_date.shift(1)
+    return data
 
+%
+u = data.groupby('patient_id').apply(shift_date_next)
+u['time_from_appointment'] = pd.to_datetime(u['awaiting_date']) - pd.to_datetime(u['visit_date'])
 
+u[(u['time_from_appointment'].dt.days > -100) & (u['time_from_appointment'].dt.days < 100)]['time_from_appointment'].dt.days.hist()
 
+#Take out time_from_appointment = Nat
 
-
-
+ps = {}
+for i in range(-365 , 365):
+    print(i)
+    ps[i] = sum(u.time_from_appointment.dt.days == i) / (len(u) - sum(u.time_from_appointment.dt.days > i))
 
 
 ## Data Maturity : need metrics to evaluate performance
