@@ -6,6 +6,8 @@ import numpy as np
 %matplotlib inline
 import numpy as np
 from datetime import timedelta
+import ipyparallel
+import subprocess
 
 data = pd.read_csv('data/processed/complete_data.csv')
 data = data[data.date_entered >= data.visit_date]
@@ -177,11 +179,7 @@ pd.to_datetime(data2.visit_date.iloc[0]) + timedelta(days=90)
 %%time
 out = data2[2000000:2010000].groupby(level = 0).apply(get_true_status)
 
-out.head(50)
-
 u = out.groupby(level = 1).time.apply(np.mean)
-print(u)
-
 
 # Until he finally exits care, a patient spends on average :
 def perc_time_status(data , total_time):
@@ -214,22 +212,41 @@ t.groupby(level = 1).mean()
     # col2 : new status
 
 # Prob of patient coming back on a given date knowing he didn't come earlier
-data1 = data[data.facility == 'ken_fac_1']
-data.head()
-
-data1.head()
-
 def shift_date_next(data):
     data.sort_values(by = 'visit_date')
     data['awaiting_date'] = data.next_visit_date.shift(1)
     return data
 
+
+
+start_cluster_command = 'ipcluster start -n 4'
+subprocess.Popen(start_cluster_command)
+
+
+import time
+print('Starting Cluster')
+for i in range(0, 100):
+    while True:
+        try:
+            clients = ipyparallel.Client()
+            dview = clients[:]
+        except:
+            time.sleep(5)
+            continue
+        break
+
 u = data.groupby('patient_id').apply(shift_date_next)
 u = u.dropna(axis = 0)
-
 u['time_from_appointment'] = pd.to_datetime(u['visit_date']) - pd.to_datetime(u['awaiting_date'])
 
-u[(u['time_from_appointment'].dt.days > -100) & (u['time_from_appointment'].dt.days < 100)]['time_from_appointment'].dt.days.hist()
+def run( delay , data = u):
+    print(delay)
+    prop =  sum(data.time_from_appointment.dt.days == delay) / (len(data) - sum(data.time_from_appointment.dt.days > delay))
+    return prop
+result = dview.map_sync(run, list(range(-10,10)))
+
+
+subprocess.Popen('ipcluster stop')
 
 ## TODO Parrallelize this thing
 
