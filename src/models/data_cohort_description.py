@@ -224,13 +224,14 @@ def shift_date_next(data):
     data['awaiting_date'] = data.next_visit_date.shift(1)
     return data
 
-%
 u = data.groupby('patient_id').apply(shift_date_next)
-u['time_from_appointment'] = pd.to_datetime(u['awaiting_date']) - pd.to_datetime(u['visit_date'])
+u = u.dropna(axis = 0)
+
+u['time_from_appointment'] = pd.to_datetime(u['visit_date']) - pd.to_datetime(u['awaiting_date'])
 
 u[(u['time_from_appointment'].dt.days > -100) & (u['time_from_appointment'].dt.days < 100)]['time_from_appointment'].dt.days.hist()
 
-#Take out time_from_appointment = Nat
+## TODO Parrallelize this thing
 
 ps = {}
 for i in range(-365 , 365):
