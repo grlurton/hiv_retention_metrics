@@ -218,42 +218,42 @@ def shift_date_next(data):
     return data
 
 
+import os
 
-start_cluster_command = 'ipcluster start -n 4'
-subprocess.Popen(start_cluster_command)
+ipcluster start -n 4
 
-
-import time
-print('Starting Cluster')
-for i in range(0, 100):
-    while True:
-        try:
-            clients = ipyparallel.Client()
-            dview = clients[:]
-        except:
-            time.sleep(5)
-            continue
-        break
+clients = ipyparallel.Client()
+clients.ids
+clients[:].apply_sync(lambda : "Hello, World")
+dview = clients[:]
 
 u = data.groupby('patient_id').apply(shift_date_next)
 u = u.dropna(axis = 0)
 u['time_from_appointment'] = pd.to_datetime(u['visit_date']) - pd.to_datetime(u['awaiting_date'])
+u.time_from_appointment = u.time_from_appointment.dt.days
 
 def run( delay , data = u):
     print(delay)
-    prop =  sum(data.time_from_appointment.dt.days == delay) / (len(data) - sum(data.time_from_appointment.dt.days > delay))
+    prop =  sum(data.time_from_appointment == delay) / (sum(data.time_from_appointment >= delay))
     return prop
-result = dview.map_sync(run, list(range(-10,10)))
 
+%%time
+result = dview.map_sync(run, list(range(-90,365)))
 
+plt.plot(result)
+sum(result)
 subprocess.Popen('ipcluster stop')
 
 ## TODO Parrallelize this thing
 
 ps = {}
-for i in range(-365 , 365):
-    print(i)
-    ps[i] = sum(u.time_from_appointment.dt.days == i) / (len(u) - sum(u.time_from_appointment.dt.days > i))
+times = list(range(-90,365))
+for i in range(0 , len(result)):
+    ps[times[i]] = result[i]
 
+
+import json
+with open('data/processed/p_return.json', 'w') as fp:
+    json.dump(ps, fp)
 
 ## Data Maturity : need metrics to evaluate performance
