@@ -223,14 +223,18 @@ import os
 ipcluster start -n 4
 
 clients = ipyparallel.Client()
-clients.ids
-clients[:].apply_sync(lambda : "Hello, World")
 dview = clients[:]
+
+
 
 u = data.groupby('patient_id').apply(shift_date_next)
 u = u.dropna(axis = 0)
 u['time_from_appointment'] = pd.to_datetime(u['visit_date']) - pd.to_datetime(u['awaiting_date'])
 u.time_from_appointment = u.time_from_appointment.dt.days
+## TODO Should only use a table of appointment given, and time the visit actually happenedm and NA if patient never came back
+
+
+
 
 def run( delay , data = u):
     print(delay)
