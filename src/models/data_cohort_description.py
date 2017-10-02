@@ -214,31 +214,36 @@ t.groupby(level = 1).mean()
 # Prob of patient coming back on a given date knowing he didn't come earlier
 def shift_date_next(data):
     data.sort_values(by = 'visit_date')
-    data['awaiting_date'] = data.next_visit_date.shift(1)
+    data['actual_next_visit'] = data.visit_date.shift(-1)
     return data
 
-
-import os
-
-ipcluster start -n 4
+#ipcluster start -n 4
 
 clients = ipyparallel.Client()
 dview = clients[:]
 
 
-
 u = data.groupby('patient_id').apply(shift_date_next)
-u = u.dropna(axis = 0)
-u['time_from_appointment'] = pd.to_datetime(u['visit_date']) - pd.to_datetime(u['awaiting_date'])
+u['time_from_appointment'] = pd.to_datetime(u['actual_next_visit']) - pd.to_datetime(u['next_visit_date'])
 u.time_from_appointment = u.time_from_appointment.dt.days
 ## TODO Should only use a table of appointment given, and time the visit actually happenedm and NA if patient never came back
 
+to_run = u[['']]
+u.head()
+
+u[u['patient_id'] == 'ken_fac_1_20443700783.0'].head()
+
+a = u.dropna()
+%%time
+sum(a.time_from_appointment > 0)
 
 
+sum(pd.isnull(u.time_from_appointment))
 
-def run( delay , data = u):
-    print(delay)
-    prop =  sum(data.time_from_appointment == delay) / (sum(data.time_from_appointment >= delay))
+
+def run( delay , data = u.time_from_appointment):
+    import pandas as pd
+    prop =  sum(data == delay) / (sum(data >= delay) + sum(pd.isnull(data)))
     return prop
 
 %%time
@@ -246,9 +251,6 @@ result = dview.map_sync(run, list(range(-90,365)))
 
 plt.plot(result)
 sum(result)
-subprocess.Popen('ipcluster stop')
-
-## TODO Parrallelize this thing
 
 ps = {}
 times = list(range(-90,365))
