@@ -16,10 +16,6 @@ data = data.groupby('patient_id').apply(caf.get_first_visit_date)
 
 dat_2012 = data[data.first_visit_date < '2012-01-01']
 
-def perc_entered(data, date):
-    data_to_enter = data[data.visit_date < date]
-    return np.mean(data_to_enter.date_entered < date)
-
 ltfu_rates = []
 years = ['2012-01-01', '2013-01-01', '2014-01-01', '2015-01-01', '2016-01-01']
 # TODO Parrallelize this
@@ -218,7 +214,6 @@ def shift_date_next(data):
     return data
 
 #ipcluster start -n 4
-
 clients = ipyparallel.Client()
 dview = clients[:]
 
