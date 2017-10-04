@@ -13,7 +13,6 @@ data = pd.read_csv('data/processed/complete_data.csv')
 data = data[data.date_entered >= data.visit_date]
 data = data.groupby('patient_id').apply(caf.get_first_visit_date)
 
-
 dat_2012 = data[data.first_visit_date < '2012-01-01']
 
 ltfu_rates = []
