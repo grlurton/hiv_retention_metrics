@@ -32,14 +32,10 @@ if kenya :
 
 haiti_data = os.environ.get("haiti_data")
 
-haiti_data
-
 haiti_metadata_url = haiti_data  + '/encBplus.txt'
 haiti_disc_url = haiti_data + '/discBplus.txt'
 # Loading Haiti
 data_haiti = get_haiti.read_metadata(haiti_metadata_url, haiti_disc_url)
-
-data_haiti.head()
 
 
 # Combining all the data
@@ -52,6 +48,5 @@ data_complete = data_all.dropna()
 data_complete.to_csv('data/processed/complete_data.csv', index=False)
 
 # TODO Check completeness of data exported from access to csv for Kenya 2 and 3
-# IDEA Only load visit data ?
 # TODO for Haiti, get dict of form types
 # TODO format dates so they are all outputed in the same way
