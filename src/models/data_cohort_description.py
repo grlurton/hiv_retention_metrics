@@ -13,7 +13,20 @@ data = pd.read_csv('data/processed/complete_data.csv')
 data = data[data.date_entered >= data.visit_date]
 data = data.groupby('patient_id').apply(caf.get_first_visit_date)
 
+data.loc[data.reasonDescEn.isin(['Patient preference', 'Seroreversion',
+                                'Poor adherence', 'Stock out']) , 'reasonDescEn'] = 'Other reasons'
+data.loc[data.reasonDescEn == 'Patient moved', 'reasonDescEn'] = 'Transferred'
+data.loc[data.reasonDescEn.isin(['Loss of contact more than 3 months', 'Unknown reason'])] = np.NaN
+
 dat_2012 = data[data.first_visit_date < '2012-01-01']
+
+caf.status_patient(data.iloc[0:3000], reference_date='2013-01-01',
+                      analysis_date='2013-01-01',
+                      grace_period=90)
+
+
+# TODO N Suivi vs N came last month
+# TODO N Suivi vs N coming next month
 
 ltfu_rates = []
 years = ['2012-01-01', '2013-01-01', '2014-01-01', '2015-01-01', '2016-01-01']
@@ -39,6 +52,8 @@ for grace_period in [30, 60, 90,  180]:
             ltfu_rates = ltfu_rates.groupby(['country', 'facility',
                                             'analysis_date', 'grace_period'])
             ltfu_rates = ltfu_rates.apply(caf.get_ltfu_rate)
+
+status_dat.status.value_counts()
 
 vl = data.facility.value_counts()
 
