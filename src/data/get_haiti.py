@@ -14,6 +14,8 @@ def read_metadata(haiti_metadata_url, haiti_disc_url, metadata_columns_to_keep=m
 
     # Adding in the discontinuation data
     disc_data = pd.read_csv(haiti_disc_url, sep = '|')
+    disc_data.discDate = pd.to_datetime(disc_data.discDate , errors = 'coerce')
+
     data = metadata.merge(disc_data , how = 'left')
 
     data.columns = ['patient_id' , 'facility' , 'form_type' , 'visit_date' , 'next_visit_date' , 'date_entered', 'discDate', 'discType', 'reasonDescEn']
