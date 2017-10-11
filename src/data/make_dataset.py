@@ -35,7 +35,7 @@ haiti_data = os.environ.get("haiti_data")
 haiti_metadata_url = haiti_data  + '/encBplus.txt'
 haiti_disc_url = haiti_data + '/discBplus.txt'
 # Loading Haiti
-data_haiti = get_haiti.read_metadata(haiti_metadata_url, haiti_disc_url)
+data_haiti = get_haiti.read_haiti_data(haiti_metadata_url, haiti_disc_url)
 
 
 # Combining all the data
