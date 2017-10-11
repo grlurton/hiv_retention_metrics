@@ -234,8 +234,12 @@ for i in range(0 , len(result)):
     for facility in fac_list:
         facs[facility][times[i]] = all_ps.loc[facility]
 
-import json
-with open('data/processed/p_return_by_fac.json', 'w') as fp:
-    json.dump(facs, fp)
+a = pd.DataFrame.from_dict(result)
+a['delta'] = times
+a = a.set_index('delta').stack()
+
+
+a.to_csv('data/processed/p_return_by_fac.csv')
+
 
 ## IDEA Data Maturity : need metrics to evaluate performance
