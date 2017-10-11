@@ -55,10 +55,6 @@ for grace_period in [30, 60, 90,  180]:
 
 status_dat.status.value_counts()
 
-vl = data.facility.value_counts()
-
-ltfu_rates.head()
-
 # TODO move the outputting functions in a separate script, and just call here with conditional triggering
 
 plt.figure(figsize=(12, 6))
@@ -113,8 +109,6 @@ data1 = data[(data['delta_entry'] >= 0) & (data['delta_entry'] <630)]
 
 plt.hist(data1.delta_entry, bins=52);
 
-ltfu_rates.head()
-
 a = data1.groupby(['facility', 'visit_month']).delta_entry.median()
 plt.figure(figsize=(30 , 30))
 for i in range(120):
@@ -125,7 +119,7 @@ for i in range(120):
     except (KeyError, ValueError , IndexError):
         continue
 
-# Check : point of care arrive starting 2013-01
+# Check : point of care data entry arrive starting 2013-01
 
 ## How long does a patient stay in different status_dat
 
@@ -135,14 +129,6 @@ for i in range(120):
 ## 3. LTFU data
 ## 4. LTFU return
 ## 5. Other out
-
-ids = data1.patient_id.unique()[12345]
-pat1 = data1[(data1.patient_id == ids)]
-pat1 = pat1.set_index(['patient_id' , 'date_entered']).sort_index()
-
-data1.head()
-
-data2 = data1.set_index(['patient_id' , 'date_entered'])
 
 ## Change to make : for patient who are Data Entry LTFU have the change of status happen right after the data is entered. Ie : 2 dates have to be added / 2 periods
 def get_true_status(data_pat):
@@ -179,14 +165,8 @@ def get_true_status(data_pat):
     out.time = pd.to_numeric(out.time)
     return out
 
-max(data2.visit_date)
-data2.loc[(slice(None) , '2013-03-14') , 'visit_date'].iloc[0]
-data2.head()
-
-
 pd.to_datetime(data2.visit_date.iloc[0]) + timedelta(days=90)
 
-%%time
 out = data2[2000000:2010000].groupby(level = 0).apply(get_true_status)
 
 u = out.groupby(level = 1).time.apply(np.mean)
@@ -231,44 +211,31 @@ def shift_date_next(data):
 clients = ipyparallel.Client()
 dview = clients[:]
 
-
-u = data.groupby('patient_id').apply(shift_date_next)
+u = data.groupby(['facility', 'patient_id']).apply(shift_date_next)
 u['time_from_appointment'] = pd.to_datetime(u['actual_next_visit']) - pd.to_datetime(u['next_visit_date'])
 u.time_from_appointment = u.time_from_appointment.dt.days
-## TODO Should only use a table of appointment given, and time the visit actually happenedm and NA if patient never came back
 
-to_run = u[['']]
-u.head()
-
-u[u['patient_id'] == 'ken_fac_1_20443700783.0'].head()
-
-a = u.dropna()
-%%time
-sum(a.time_from_appointment > 0)
-
-
-sum(pd.isnull(u.time_from_appointment))
-
-
-def run( delay , data = u.time_from_appointment):
+def run(delay, data = u):
     import pandas as pd
-    prop =  sum(data == delay) / (sum(data >= delay) + sum(pd.isnull(data)))
-    return prop
+    def prop_delay(data, delay = delay):
+        prop =  sum(data.time_from_appointment == delay) / (sum(data.time_from_appointment >= delay) + sum(pd.isnull(data.time_from_appointment)))
+        return prop
+    out = data.groupby('facility').apply(prop_delay)
+    return out
 
-%%time
 result = dview.map_sync(run, list(range(-90,365)))
 
-plt.plot(result)
-sum(result)
+fac_list = list(result[0].index)
 
-ps = {}
+facs = dict.fromkeys(fac_list , {})
 times = list(range(-90,365))
 for i in range(0 , len(result)):
-    ps[times[i]] = result[i]
-
+    all_ps = result[i]
+    for facility in fac_list:
+        facs[facility][times[i]] = all_ps.loc[facility]
 
 import json
-with open('data/processed/p_return.json', 'w') as fp:
-    json.dump(ps, fp)
+with open('data/processed/p_return_by_fac.json', 'w') as fp:
+    json.dump(facs, fp)
 
-## Data Maturity : need metrics to evaluate performance
+## IDEA Data Maturity : need metrics to evaluate performance
