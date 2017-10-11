@@ -44,8 +44,10 @@ if kenya == True :
 
 data_all = data_haiti
 
+data_all = data_all[data_all.date_entered >= data_all.visit_date]
+
+
 data_all.to_csv('data/processed/complete_data.csv', index=False)
 
 # TODO Check completeness of data exported from access to csv for Kenya 2 and 3
 # TODO for Haiti, get dict of form types
-# TODO format dates so they are all outputed in the same way
