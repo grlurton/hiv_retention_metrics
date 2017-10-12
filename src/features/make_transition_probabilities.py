@@ -30,6 +30,8 @@ def run(delay, data = shifted_data):
 return_probabilities = dview.map_sync(run, list(range(-90,365)))
 
 return_tables = pd.DataFrame.from_dict(return_probabilities)
+
+times = list(range(-90,365))
 return_tables['delta'] = times
 return_tables = return_tables.set_index('delta').stack()
 
