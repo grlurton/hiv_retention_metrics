@@ -18,8 +18,7 @@ def status_patient(data_patient, reference_date, analysis_date, grace_period):
 
     if len(data_current) > 0:
         date_out = pd.NaT
-        date_last_appointment = max(data_current.next_visit_date)
-        date_last_appointment = pd.to_datetime(date_last_appointment)
+        date_last_appointment = pd.to_datetime(max(data_current.next_visit_date))
         late_time = reference_date - date_last_appointment
         if late_time.days > grace_period:
             status = 'LTFU'
@@ -40,9 +39,12 @@ def status_patient(data_patient, reference_date, analysis_date, grace_period):
 
 def horizon_outcome(data_patient, reference_date, analysis_date,
                     grace_period, horizon):
+    # Make sure dates are dates
     reference_date = pd.to_datetime(reference_date)
     data_patient['first_visit_date'] = pd.to_datetime(
                 data_patient['first_visit_date'])
+
+    # Get the time between reference date and the first visit
     length_suivi = reference_date - data_patient.iloc[0]['first_visit_date']
     length_suivi = length_suivi.days
     if length_suivi < horizon:
@@ -55,7 +57,8 @@ def horizon_outcome(data_patient, reference_date, analysis_date,
                 time = status.date_out - status.first_visit_date
                 if time.iloc[0].days <= horizon:
                     status['status_horizon'] = status.status
-                if time.iloc[0].days > horizon:
+                # For patients that have exited the cohort after their follow-up horizon, they should be considered still in care at the horizon date
+                if (time.iloc[0].days > horizon) :
                     status['status_horizon'] = 'Followed'
             if status.date_out.iloc[0] is pd.NaT:
                 status['status_horizon'] = 'Followed'
@@ -70,17 +73,27 @@ def n_visits(data, month, analysis_date):
     return len(analyse_data)
 
 
+## Get Monthly Report
+
+def aggregate_report(horizon_status):
+    status = horizon_status['status'].value_counts()
+    hor_status = horizon_status['status_horizon'].value_counts()
+    out = pd.DataFrame({'status':status, 'hor_status':hor_status})
+    out = out.fillna(0)
+    return out
+
+def monthly_report(data, month, reference_month, grace_period, horizon):
+    status = data.groupby(['facility' , 'patient_id']).apply(horizon_outcome, month, reference_month,  grace_period, horizon)
+    reports = status.groupby('facility').apply(aggregate_report)
+    return(reports)
+
+
 
 
 
 # QUESTION What are the form_types
 # TODO regorganize the code in different types of reports and utilities functions
 # TODO refactor the functions :
-# 1. Function to extract relevant data frame based on date of analysis
+# 1. Function to extract relevant data frames based on date of analysis
 # 2. Function to compute the needed quantities
-# TODO A given patient is on average wrongly considered LTFU XX% of the time if
-# analysis conducted
-# TODO Replication Chi ?
-
-# Active patient summary by site. Isanté Team. Voir si on peut intégrer le résultat pour eux.
-# TODO Faire un nombre de patient suivis, et un nombre de patients attendus
+# TODO Differentiate between : full data + knowledge of future vs full data at time

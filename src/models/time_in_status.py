@@ -1,4 +1,7 @@
 
+
+# TODO A given patient is on average wrongly considered LTFU XX% of the time if
+
 ## How long does a patient stay in different status_dat
 
 # Categories :

@@ -8,15 +8,41 @@ import os
 
 %matplotlib inline
 
+# TODO Replication Chi ?
+# TODO Active patient summary by site. Isanté Team. Voir si on peut intégrer le résultat pour eux.
+# TODO Faire un nombre de patient suivis, et un nombre de patients attendus
+
+
 data = pd.read_csv('data/processed/complete_data.csv')
 facilities_list = list(data.facility.unique())
 
-
 caf.n_visits(data, '2013-01-01', '2013-02-01')
+
 data = data.groupby('patient_id').apply(caf.get_first_visit_date)
 data_report = data.groupby('patient_id').apply(caf.status_patient, '2013-01-01', '2015-02-01', 90)
 
+
+import importlib
+importlib.reload(caf);
+
+data['first_visit_date'] = pd.to_datetime(data['first_visit_date'])
+cohort = data[(data['first_visit_date'] >= pd.to_datetime('2007-01-01')) & (data['first_visit_date'] <= pd.to_datetime('2007-12-31'))]
+
+caf.monthly_report(cohort, '2010-02-01', '2010-03-01', 90 , 365)
+
+cohort['patient_id'] = cohort['patient_id'].apply(str)
+
+data_follow_up = cohort.groupby('patient_id').apply(caf.horizon_outcome,  '2010-02-01', '2010-03-01', 90 , 365)
+data_report = cohort.groupby('patient_id').apply(caf.status_patient, '2010-02-01', '2010-03-01', 90)
+
 data_report.status.value_counts()
+
+
+data_follow_up.status.value_counts()
+
+data_follow_up.status_horizon.value_counts()
+
+data_follow_up.status_horizon.value_counts()
 
 
 # TODO N Suivi vs N came last month
