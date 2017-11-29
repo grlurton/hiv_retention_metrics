@@ -68,13 +68,13 @@ def horizon_outcome(data_cohort, reference_date, horizon_time):
 
 ## Transversal description only
 def n_visits(data, month):
-    month = pd.to_datetime(month).to_period('M') ##TODO extract analysis month earlier
-    data['reporting_month'] = pd.to_datetime(data['visit_date']).dt.to_period('M')
-    n_vis =  sum(data['reporting_month'] == month)
+    month = pd.to_datetime(month).to_period('M')##TODO extract analysis month earlier
+    reporting_month = pd.to_datetime(data['visit_date']).dt.to_period('M')
+    n_vis =  sum(reporting_month == month)
     out = pd.DataFrame({'n_visits' : [n_vis]})
     return out
 
-date_analysis = '2010-01-01'
+date_analysis = '2009-10-01'
 month = '2009-05-01'
 report_data = subset_analysis_data(data, date_analysis)
 len(data)
