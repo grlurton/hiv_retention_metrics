@@ -1,99 +1,88 @@
 import pandas as pd
 import numpy as np
+from dateutil.relativedelta import relativedelta
+
+
+data = pd.read_csv('data/processed/complete_data.csv')
 
 #### Utilities
 
 def get_first_visit_date(data_patient):
+    ''' Determines the first visit for a given patient'''
+    #IDEA Could be parallelized in Dask
     data_patient['first_visit_date'] = min(data_patient.visit_date)
     return data_patient
 
+def subset_analysis_data(data, date_analysis):
+    ''' Function that subsets the full dataset to only the data available for a certain analysis date'''
+    data = data[data.date_entered < date_analysis]
+    return data
+
+def subset_cohort(data, horizon_date, horizon_time, bandwidth):
+    ''' Function that subsets data from a cohort that has initiated care a year before the horizon_date, and after a year + bandwith'''
+    horizon_date = pd.to_datetime(horizon_date) # TODO have this converstion happening earlier / have it conditional
+    data['first_visit_date'] = pd.to_datetime(data['first_visit_date'])
+    cohort_data = data[(data['first_visit_date'] >= horizon_date - relativedelta(days=horizon_time + bandwidth)) &
+                 (data['first_visit_date'] < horizon_date - relativedelta(days=horizon_time))]
+    return cohort_data
+
+
 #### Standard reporting
 
-def status_patient(data_patient, reference_date, analysis_date, grace_period):
+def status_patient(data_patient, reference_date, grace_period):
     ''' Determines the status of a patient at a given reference_date, given the data available at a given analysis_date
     TODO Also select the available data for Death and Transfer and other outcomes based on data entry time
     '''
-    data_current = data_patient[data_patient.date_entered < analysis_date]
-    reference_date = pd.to_datetime(reference_date)
+    #IDEA Could be parallelized in Dask
+    data_patient = get_first_visit_date(data_patient)
+    reference_date = pd.to_datetime(reference_date) # TODO Have the conversion happen earlier to spare computing time
+    date_out = pd.NaT
+    date_last_appointment = pd.to_datetime(max(data_patient.next_visit_date))
+    late_time = reference_date - date_last_appointment
+    if late_time.days > grace_period:
+        status = 'LTFU'
+        date_out = date_last_appointment
+    if late_time.days <= grace_period:
+        status = 'Followed'
+    if (data_patient.reasonDescEn.iloc[0] is not np.nan) & (pd.to_datetime(data_patient.discDate.iloc[0]) < reference_date):
+        status = data_patient.reasonDescEn.iloc[0]
+        date_out = pd.to_datetime(data_patient.discDate.iloc[0])
+    return pd.DataFrame([{'status': status,
+                          'late_time': late_time,
+                          'last_appointment': date_last_appointment,
+                          'date_out':date_out ,
+                          'first_visit_date':data_patient.first_visit_date.iloc[0]}])
 
-    if len(data_current) > 0:
-        date_out = pd.NaT
-        date_last_appointment = pd.to_datetime(max(data_current.next_visit_date))
-        late_time = reference_date - date_last_appointment
-        if late_time.days > grace_period:
-            status = 'LTFU'
-            date_out = date_last_appointment
-        if late_time.days <= grace_period:
-            status = 'Followed'
-        if (data_current.reasonDescEn.iloc[0] is not np.nan) & \
-        (pd.to_datetime(data_current.discDate.iloc[0]) < reference_date):
-            status = data_current.reasonDescEn.iloc[0]
-            date_out = pd.to_datetime(data_current.discDate.iloc[0])
-        return pd.DataFrame([{'status': status,
-                              'late_time': late_time,
-                              'last_appointment': date_last_appointment,
-                              'reference_date': reference_date,
-                              'analysis_date': analysis_date,
-                              'date_out':date_out,
-                              'first_visit_date':data_current.first_visit_date.iloc[0]}])
+def horizon_outcome(data_cohort, reference_date, horizon_time):
+    # TODO Make sure dates are dates
+    reference_date = pd.to_datetime(reference_date) #TODO This conversion should happen earlier
+    data_cohort['first_visit_date'] = pd.to_datetime(data_cohort['first_visit_date']) #TODO This conversion should happen earlier
 
-def horizon_outcome(data_patient, reference_date, analysis_date,
-                    grace_period, horizon):
-    # Make sure dates are dates
-    reference_date = pd.to_datetime(reference_date)
-    data_patient['first_visit_date'] = pd.to_datetime(
-                data_patient['first_visit_date'])
+    data_cohort['horizon_date'] = data_cohort['first_visit_date'] + np.timedelta64(horizon_time, 'D')
+    data_cohort['horizon_status'] = data_cohort['status']
+    # If the patient exited the cohort after his horizon date, still consider him followed
+    # BUG This is marginally invalid, for example if a patient was considered LTFU before he died
+    data_cohort.horizon_status[~(data_cohort['status'] == 'Followed') & (data_cohort['date_out'] > data_cohort['horizon_date'])] = 'Followed'
+    return data_cohort
 
-    # Get the time between reference date and the first visit
-    length_suivi = reference_date - data_patient.iloc[0]['first_visit_date']
-    length_suivi = length_suivi.days
-    if length_suivi < horizon:
-        pass
-    if length_suivi >= horizon:
-        status = status_patient(data_patient, reference_date,
-                                analysis_date, grace_period)
-        if status is not None:
-            if status.date_out.iloc[0] is not pd.NaT:
-                time = status.date_out - status.first_visit_date
-                if time.iloc[0].days <= horizon:
-                    status['status_horizon'] = status.status
-                # For patients that have exited the cohort after their follow-up horizon, they should be considered still in care at the horizon date
-                if (time.iloc[0].days > horizon) :
-                    status['status_horizon'] = 'Followed'
-            if status.date_out.iloc[0] is pd.NaT:
-                status['status_horizon'] = 'Followed'
-            return status
 
 ## Transversal description only
-def n_visits(data, month, analysis_date):
-    month = pd.to_datetime(month).to_period('M')
+def n_visits(data, month):
+    month = pd.to_datetime(month).to_period('M') ##TODO extract analysis month earlier
     data['reporting_month'] = pd.to_datetime(data['visit_date']).dt.to_period('M')
-    analyse_data = data[(data['reporting_month'] == month) &
-                        (data['date_entered'] < analysis_date)]
-    n_vis =  len(analyse_data)
+    n_vis =  sum(data['reporting_month'] == month)
     out = pd.DataFrame({'n_visits' : [n_vis]})
     return out
 
+date_analysis = '2010-01-01'
+month = '2009-05-01'
+report_data = subset_analysis_data(data, date_analysis)
+len(data)
+len(report_data)
 
-## Get Monthly Report
-def aggregate_report(horizon_status):
-    status = horizon_status['status'].value_counts()
-    hor_status = horizon_status['status_horizon'].value_counts()
-    out = pd.DataFrame({'status':status, 'hor_status':hor_status})
-    out = out.fillna(0)
-    return out
+n_visits_res = n_visits(report_data, month)
 
-def monthly_report(data, month, reference_month, grace_period, horizon):
-    status = data.groupby(['facility' , 'patient_id']).apply(horizon_outcome, month, reference_month,  grace_period, horizon)
-    reports = status.groupby('facility').apply(aggregate_report)
-    reports = reports.unstack()
-    visits = data.groupby('facility').apply(n_visits, month, reference_month)
-    reports = reports.merge(visits, how = 'outer' , left_index=True, right_index=True)
-    return(reports)
-
-
+df_status = report_data.groupby('patient_id').apply(status_patient, month, 90)
+cohort_data = subset_cohort(df_status, month, 365, 365)
+horizon_outcome(cohort_data, month, 365)
 # QUESTION What are the form_types
-# TODO refactor the functions :
-# 1. Function to extract relevant data frames based on date of analysis
-# 2. Function to compute the needed quantities
-# TODO Differentiate between : full data + knowledge of future vs full data at time
