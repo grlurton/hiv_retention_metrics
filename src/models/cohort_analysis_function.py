@@ -65,11 +65,11 @@ def horizon_outcome(data_cohort, reference_date, horizon_time):
 def n_visits(data, month):
     reporting_month = pd.to_datetime(data['visit_date']).dt.to_period('M')
     n_vis =  sum(reporting_month == month)
-    out = pd.DataFrame({'n_visits' : [n_vis]})
-    return out
+    return n_vis
 
 
 def make_report(data, reference_date, date_analysis, grace_period, horizon_time, cohort_width):
+    assert reference_date <= date_analysis, 'You should not analyze a period before you have the data (date of analysis is before reference date)'
     reference_date = pd.to_datetime(reference_date)
     report_data = subset_analysis_data(data, date_analysis)
     if len(report_data) > 0:
