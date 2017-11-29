@@ -2,9 +2,6 @@ import pandas as pd
 import numpy as np
 from dateutil.relativedelta import relativedelta
 
-
-data = pd.read_csv('data/processed/complete_data.csv')
-
 #### Utilities
 
 def get_first_visit_date(data_patient):
@@ -20,7 +17,7 @@ def subset_analysis_data(data, date_analysis):
 
 def subset_cohort(data, horizon_date, horizon_time, bandwidth):
     ''' Function that subsets data from a cohort that has initiated care a year before the horizon_date, and after a year + bandwith'''
-    horizon_date = pd.to_datetime(horizon_date) # TODO have this converstion happening earlier / have it conditional
+    horizon_date = pd.to_datetime(horizon_date)
     data['first_visit_date'] = pd.to_datetime(data['first_visit_date'])
     cohort_data = data[(data['first_visit_date'] >= horizon_date - relativedelta(days=horizon_time + bandwidth)) &
                  (data['first_visit_date'] < horizon_date - relativedelta(days=horizon_time))]
@@ -35,7 +32,6 @@ def status_patient(data_patient, reference_date, grace_period):
     '''
     #IDEA Could be parallelized in Dask
     data_patient = get_first_visit_date(data_patient)
-    reference_date = pd.to_datetime(reference_date) # TODO Have the conversion happen earlier to spare computing time
     date_out = pd.NaT
     date_last_appointment = pd.to_datetime(max(data_patient.next_visit_date))
     late_time = reference_date - date_last_appointment
@@ -55,11 +51,10 @@ def status_patient(data_patient, reference_date, grace_period):
 
 def horizon_outcome(data_cohort, reference_date, horizon_time):
     # TODO Make sure dates are dates
-    reference_date = pd.to_datetime(reference_date) #TODO This conversion should happen earlier
     data_cohort['first_visit_date'] = pd.to_datetime(data_cohort['first_visit_date']) #TODO This conversion should happen earlier
 
-    data_cohort['horizon_date'] = data_cohort['first_visit_date'] + np.timedelta64(horizon_time, 'D')
-    data_cohort['horizon_status'] = data_cohort['status']
+    data_cohort.loc[:, 'horizon_date'] = data_cohort['first_visit_date'] + np.timedelta64(horizon_time, 'D')
+    data_cohort.loc[: , 'horizon_status'] = data_cohort['status']
     # If the patient exited the cohort after his horizon date, still consider him followed
     # BUG This is marginally invalid, for example if a patient was considered LTFU before he died
     data_cohort.horizon_status[~(data_cohort['status'] == 'Followed') & (data_cohort['date_out'] > data_cohort['horizon_date'])] = 'Followed'
@@ -68,21 +63,25 @@ def horizon_outcome(data_cohort, reference_date, horizon_time):
 
 ## Transversal description only
 def n_visits(data, month):
-    month = pd.to_datetime(month).to_period('M')##TODO extract analysis month earlier
     reporting_month = pd.to_datetime(data['visit_date']).dt.to_period('M')
     n_vis =  sum(reporting_month == month)
     out = pd.DataFrame({'n_visits' : [n_vis]})
     return out
 
-date_analysis = '2009-10-01'
-month = '2009-05-01'
-report_data = subset_analysis_data(data, date_analysis)
-len(data)
-len(report_data)
 
-n_visits_res = n_visits(report_data, month)
+def make_report(data, reference_date, date_analysis, grace_period, horizon_time, cohort_width):
+    reference_date = pd.to_datetime(reference_date)
+    report_data = subset_analysis_data(data, date_analysis)
+    if len(report_data) > 0:
+        month = reference_date.to_period('M') - 1
+        n_visits_month = n_visits(report_data, month)
+        df_status = report_data.groupby('patient_id').apply(status_patient, reference_date, 90)
+        cohort_data = subset_cohort(df_status, reference_date, horizon_time, cohort_width)
+        horizon_outcome_data = horizon_outcome(cohort_data, month, 365)
+        transversal_report = df_status.status.value_counts()
+        longitudinal_report = horizon_outcome_data.horizon_status.value_counts()
+        out_reports = {'transversal':transversal_report, 'longitudinal':longitudinal_report,
+                        'n_visits':n_visits_month}
+        return out_reports
 
-df_status = report_data.groupby('patient_id').apply(status_patient, month, 90)
-cohort_data = subset_cohort(df_status, month, 365, 365)
-horizon_outcome(cohort_data, month, 365)
 # QUESTION What are the form_types
