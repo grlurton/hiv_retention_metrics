@@ -70,11 +70,12 @@ def n_visits(data, month, analysis_date):
     data['reporting_month'] = pd.to_datetime(data['visit_date']).dt.to_period('M')
     analyse_data = data[(data['reporting_month'] == month) &
                         (data['date_entered'] < analysis_date)]
-    return len(analyse_data)
+    n_vis =  len(analyse_data)
+    out = pd.DataFrame({'n_visits' : [n_vis]})
+    return out
 
 
 ## Get Monthly Report
-
 def aggregate_report(horizon_status):
     status = horizon_status['status'].value_counts()
     hor_status = horizon_status['status_horizon'].value_counts()
@@ -85,14 +86,13 @@ def aggregate_report(horizon_status):
 def monthly_report(data, month, reference_month, grace_period, horizon):
     status = data.groupby(['facility' , 'patient_id']).apply(horizon_outcome, month, reference_month,  grace_period, horizon)
     reports = status.groupby('facility').apply(aggregate_report)
+    reports = reports.unstack()
+    visits = data.groupby('facility').apply(n_visits, month, reference_month)
+    reports = reports.merge(visits, how = 'outer' , left_index=True, right_index=True)
     return(reports)
 
 
-
-
-
 # QUESTION What are the form_types
-# TODO regorganize the code in different types of reports and utilities functions
 # TODO refactor the functions :
 # 1. Function to extract relevant data frames based on date of analysis
 # 2. Function to compute the needed quantities
