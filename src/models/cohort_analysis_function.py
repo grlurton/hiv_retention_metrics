@@ -12,6 +12,8 @@ def get_first_visit_date(data_patient):
 
 def subset_analysis_data(data, date_analysis):
     ''' Function that subsets the full dataset to only the data available for a certain analysis date'''
+    if type(data.date_entered.iloc[0]) is str :
+        data.date_entered = pd.to_datetime(data.date_entered)
     data = data[data.date_entered < date_analysis]
     return data
 
