@@ -68,9 +68,14 @@ def n_visits(data, month):
     return n_vis
 
 
+type('ss') is str
+
 def make_report(data, reference_date, date_analysis, grace_period, horizon_time, cohort_width):
     assert reference_date <= date_analysis, 'You should not analyze a period before you have the data (date of analysis is before reference date)'
-    reference_date = pd.to_datetime(reference_date)
+    if type(reference_date) is str :
+        reference_date = pd.to_datetime(reference_date)
+    if type(date_analysis) is str:
+        date_analysis = pd.to_datetime(date_analysis)
     report_data = subset_analysis_data(data, date_analysis)
     if len(report_data) > 0:
         month = reference_date.to_period('M') - 1
