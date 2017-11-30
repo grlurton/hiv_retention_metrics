@@ -85,9 +85,7 @@ def make_report(data, reference_date, date_analysis, grace_period, horizon_time,
         df_status = report_data.groupby('patient_id').apply(status_patient, reference_date, 90)
         cohort_data = subset_cohort(df_status, reference_date, horizon_time, cohort_width)
         horizon_outcome_data = horizon_outcome(cohort_data, month, 365)
-        transversal_report = df_status.status.value_counts()
-        longitudinal_report = horizon_outcome_data.horizon_status.value_counts()
-        out_reports = {'transversal':transversal_report, 'longitudinal':longitudinal_report,
+        out_reports = {'transversal':df_status, 'longitudinal':horizon_outcome_data,
                         'n_visits':n_visits_month}
         return out_reports
 
