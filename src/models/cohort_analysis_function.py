@@ -49,7 +49,8 @@ def status_patient(data_patient, reference_date, grace_period):
                           'late_time': late_time,
                           'last_appointment': date_last_appointment,
                           'date_out':date_out ,
-                          'first_visit_date':data_patient.first_visit_date.iloc[0]}])
+                          'first_visit_date':data_patient.first_visit_date.iloc[0],
+                          'facility':data_patient.facility.iloc[0]}])
 
 def horizon_outcome(data_cohort, reference_date, horizon_time):
     # TODO Make sure dates are dates
@@ -69,9 +70,6 @@ def n_visits(data, month):
     n_vis =  sum(reporting_month == month)
     return n_vis
 
-
-type('ss') is str
-
 def make_report(data, reference_date, date_analysis, grace_period, horizon_time, cohort_width):
     assert reference_date <= date_analysis, 'You should not analyze a period before you have the data (date of analysis is before reference date)'
     if type(reference_date) is str :
@@ -81,11 +79,15 @@ def make_report(data, reference_date, date_analysis, grace_period, horizon_time,
     report_data = subset_analysis_data(data, date_analysis)
     if len(report_data) > 0:
         month = reference_date.to_period('M') - 1
-        n_visits_month = n_visits(report_data, month)
+        n_visits_month = report_data.groupby('facility').apply(n_visits, month)
         df_status = report_data.groupby('patient_id').apply(status_patient, reference_date, 90)
         cohort_data = subset_cohort(df_status, reference_date, horizon_time, cohort_width)
+    #    print(df_status.head())
         horizon_outcome_data = horizon_outcome(cohort_data, month, 365)
-        out_reports = {'transversal':df_status, 'longitudinal':horizon_outcome_data,
+        transversal_reports = df_status.groupby('facility').status.value_counts()
+        longitudinal_reports = horizon_outcome_data.groupby('facility').status.value_counts()
+        out_reports = {'transversal':transversal_reports,
+                        'longitudinal':longitudinal_reports,
                         'n_visits':n_visits_month}
         return out_reports
 
