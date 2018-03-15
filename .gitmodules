@@ -1,0 +1,3 @@
+[submodule "vivarium/vivarium"]
+	path = vivarium/vivarium
+	url = https://github.com/ihmeuw/vivarium
